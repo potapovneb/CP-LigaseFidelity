@@ -80,6 +80,8 @@ time ccs \
     --min-passes=1 \
     $rundir/01-cluster/subreads.fwd.bam subreads_ccs.fwd.bam
 
+samtools index $rundir/01-cluster/subreads.fwd.bam subreads_ccs.fwd.bam
+
 echo "ccs (2)"
 time ccs \
     --report-file=subreads_ccs.rev.csv \
@@ -88,88 +90,7 @@ time ccs \
     --min-passes=1 \
     $rundir/01-cluster/subreads.rev.bam subreads_ccs.rev.bam
 
-###############################################################################
-### Map CCS sequences                                                       ###
-###############################################################################
-
-echo ""
-echo "Map CCS sequences"
-
-### create output directory for mapped consensus reads
-jobdir=$rundir/03-mapping
-mkdir -p $jobdir
-cd $jobdir
-
-echo "pbmm2 (1)"
-time TMPDIR=$PWD pbmm2 align $reference $rundir/02-ccs/subreads_ccs.fwd.bam aligned_reads.fwd.bam \
-    --sort \
-    --min-concordance-perc 75.0 \
-    --sample \"\" \
-    --num-threads 16 \
-    --log-level TRACE \
-    --log-file aligned_reads.fwd.log
-
-echo "pbmm2 (2)"
-time TMPDIR=$PWD pbmm2 align $reference $rundir/02-ccs/subreads_ccs.rev.bam aligned_reads.rev.bam \
-    --sort \
-    --min-concordance-perc 75.0 \
-    --sample \"\" \
-    --num-threads 16 \
-    --log-level TRACE \
-    --log-file aligned_reads.rev.log
-
-###############################################################################
-### Fragment CCS sequences                                                  ###
-###############################################################################
-
-echo ""
-echo "Fragment CCS sequences"
-
-### create output directory for fragmented consensus reads
-jobdir=$rundir/04-fragments
-mkdir -p $jobdir
-cd $jobdir
-
-echo "extract.pl (1)"
-time extract.pl \
-    --region 1-3,3-10/1,10-12 \
-    --region 45-47,47-52/1,52-54 \
-    --region 87-89,89-96/1,96-98 \
-    $rundir/03-mapping/aligned_reads.fwd.bam $reference >fragments.fwd.csv 2>fragments.fwd.log
-
-echo "extract.pl (2)"
-time extract.pl \
-    --region 1-3,3-10/1,10-12 \
-    --region 45-47,47-52/1,52-54 \
-    --region 87-89,89-96/1,96-98 \
-    $rundir/03-mapping/aligned_reads.rev.bam $reference >fragments.rev.csv 2>fragments.rev.log
-
-echo "bam2csv.pl (1)"
-time bam2csv.pl $rundir/02-ccs/subreads_ccs.fwd.bam zmws.fwd.csv
-
-echo "bam2csv.pl (2)"
-time bam2csv.pl $rundir/02-ccs/subreads_ccs.rev.bam zmws.rev.csv
-
-###############################################################################
-### Raw counts                                                              ###
-###############################################################################
-
-echo ""
-echo "Count overhangs"
-
-### create output directory for overhang counts
-jobdir=$rundir/05-results
-mkdir -p $jobdir
-cd $jobdir
-
-echo "reporter.pl"
-time reporter.pl \
-    --etype b4 \
-    --match 5 \
-    --np 5 \
-    --bcout barcodes.csv \
-    --ohout overhangs.csv \
-    $rundir/04-fragments
+samtools index $rundir/01-cluster/subreads.rev.bam subreads_ccs.rev.bam
 
 ###############################################################################
 ### Summary tables                                                          ###
@@ -179,12 +100,9 @@ echo ""
 echo "Tabulate results"
 
 ### create output directory for summary tables
-jobdir=$rundir/06-summary
+jobdir=$rundir/02-summary
 mkdir -p $jobdir
 cd $jobdir
 
-echo "mktable_barcode.pl"
-mktable_barcode.pl $rundir/05-results/barcodes.csv > table-barcode_base_frequencies.csv
-
-echo "mktable.pl"
-mktable.pl --size 4 --prefix table $rundir/05-results/overhangs.csv
+echo "summarize_results.py"
+time summarize_results.py $rundir/02-ccs/subreads_ccs.{fwd,rev}.bam
