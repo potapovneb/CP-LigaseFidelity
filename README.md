@@ -8,25 +8,21 @@ The computational workflow requires a number of tools to be installed and availa
 
 ## PacBio tools
 
-* ```lima``` (optional) - Demultiplexing PacBio data. Available as part of [pbbioconda](https://github.com/PacificBiosciences/pbbioconda).
-* ```pbmm2``` - minimap2 SMRT wrapper for PacBio data. Available as part of [pbbioconda](https://github.com/PacificBiosciences/pbbioconda).
 * ```ccs``` - Generating circular consensus sequences (CCS) based on PacBio sequencing data. Available as part of [pbbioconda](https://github.com/PacificBiosciences/pbccs).
+* ```lima``` (optional) - Demultiplexing PacBio data. Available as part of [pbbioconda](https://github.com/PacificBiosciences/pbbioconda).
 
 ## Third-party tools
 
 * ```samtools``` - Handling high-throughput sequencing data. Available through [conda](https://anaconda.org/bioconda/samtools) or [GitHub](https://github.com/samtools/samtools).
+* ```pysam``` - Python module for handling sequencing files. Available through [conda](https://anaconda.org/bioconda/pysam) or [GitHub](https://github.com/pysam-developers/pysam).
 
-## Custom PERL scripts
+## Custom PERL/Python scripts
 
 These custom scripts are provided as part of Ligase Fidelity GitHub repository. The scripts must be made available from the command line in your system (for example, by adding the scripts directory to ```$PATH``` environment variable).
 
 * ```cluster.pl``` - Identify top/bottom subreads in PacBio sequencing reads.
 * ```split.pl``` - Split top/bottom subreads to separate files.
-* ```extract.pl``` - Extract fragments of sequenced amplicons.
-* ```bam2csv.pl``` - Extract stats for PacBio sequencing reads.
-* ```reporter.pl``` - Output overhang and barcode sequences.
-* ```mktable_barcode.pl``` - Compute nucleotide frequencies in barcodes.
-* ```mktable.pl``` - Tabulate ligase fidelity results.
+* ```suumarize_results.py``` - Extract overhang pairs and generate output tables summarizing results.
 
 # Computational workflow
 
@@ -111,35 +107,6 @@ time ccs \
     --num-threads=8 \
     --min-passes=1 \
     $rundir/01-cluster/subreads.rev.bam subreads_ccs.rev.bam
-```
-
-## Map CCS sequences
-
-Consensus sequences are mapped to the expected reference using PacBio ```pbmm2``` tool.
-
-```
-### create output directory for mapped consensus reads
-jobdir=$rundir/03-mapping
-mkdir -p $jobdir
-cd $jobdir
-
-echo "pbmm2 (1)"
-time TMPDIR=$PWD pbmm2 align $reference $rundir/02-ccs/subreads_ccs.fwd.bam aligned_reads.fwd.bam \
-    --sort \
-    --min-concordance-perc 75.0 \
-    --sample \"\" \
-    --num-threads 16 \
-    --log-level TRACE \
-    --log-file aligned_reads.fwd.log
-
-echo "pbmm2 (2)"
-time TMPDIR=$PWD pbmm2 align $reference $rundir/02-ccs/subreads_ccs.rev.bam aligned_reads.rev.bam \
-    --sort \
-    --min-concordance-perc 75.0 \
-    --sample \"\" \
-    --num-threads 16 \
-    --log-level TRACE \
-    --log-file aligned_reads.rev.log
 ```
 
 ## Summary tables
