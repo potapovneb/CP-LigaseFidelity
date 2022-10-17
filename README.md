@@ -25,6 +25,7 @@ These custom scripts are provided as part of Ligase Fidelity GitHub repository. 
 * ```pandas``` - Python data analysis library. Available through [conda](https://anaconda.org/anaconda/pandas).
 * ```numpy``` - Package for scientific computing with Python. Available through [conda](https://anaconda.org/anaconda/numpy).
 * ```seaborn``` - Python data visualization library. Available through [conda](https://anaconda.org/anaconda/seaborn).
+* ```matplotlib``` - Plotting library for the Python programming language. Available through [conda](https://anaconda.org/conda-forge/matplotlib).
 
 # Computational workflow
 
@@ -131,9 +132,26 @@ summarize_results.py \
     $rundir/02-ccs/subreads_ccs.{0,1}.bam
 ```
 
+The last step of the workflow generates nine output files.
+
+## Plot ligation fidelity data (optional)
+
+The additional ```plot_data.py``` script generates four example plots based on the output tables produced in the previous step:
+* ```06_matrix.png``` - Frequency heat map of all ligation events (log-scaled)
+* ```07_fidelity.png``` - Stacked bar plot showing the frequency of ligation products containing each overhang
+* ```08_mismatch-e.png``` - Frequency of specific base pair mismatches by position (the edge position)
+* ```09_mismatch-m.png``` - Frequency of specific base pair mismatches by position (the middle position)
+
+Please see "Interpretation of results" section below
+
+```
+cd $rundir/03-summary
+plot_data.py .
+```
+
 ## Interpretation of results
 
-The last step of the workflow generates nine output files. All overhang and barcode sequences are always written in 5'-3' direction.
+Note that all overhang and barcode sequences are always written in 5'-3' direction.
 
 ### 01_fragments.csv
 This is the raw output of the ligation fidelity data. Each line in this file gives PacBio read name (```qname```); number of passes for the first strand (```np1```); sequence of the left barcode region (```left_bc1```), overhang (```overhang1```), and the right barcode region (```right_bc1```) in the first strand; number of passes for the second strand (```np2```), sequence of the left barcode region (```left_bc2```), overhang (```overhang2```), and the right barcode region (```right_bc2```) in the second strand; and the number of mismatching bases for each overhang pair (```overhang_mismatch```).

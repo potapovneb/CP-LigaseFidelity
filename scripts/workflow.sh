@@ -68,8 +68,6 @@ cd $jobdir
 
 echo "ccs (1)"
 time ccs \
-    --report-file=subreads_ccs.0.csv \
-    --log-file=subreads_ccs.0.log \
     --num-threads=24 \
     --min-passes=3 \
     $rundir/01-cluster/subreads.0.bam subreads_ccs.0.bam
@@ -78,8 +76,6 @@ samtools index $rundir/02-ccs/subreads_ccs.0.bam
 
 echo "ccs (2)"
 time ccs \
-    --report-file=subreads_ccs.1.csv \
-    --log-file=subreads_ccs.1.log \
     --num-threads=24 \
     --min-passes=3 \
     $rundir/01-cluster/subreads.1.bam subreads_ccs.1.bam
@@ -100,3 +96,13 @@ cd $jobdir
 
 echo "summarize_results.py"
 time summarize_results.py $rundir/02-ccs/subreads_ccs.{0,1}.bam
+
+###############################################################################
+### Plot data (optional)                                                    ###
+###############################################################################
+
+echo ""
+echo "Plot ligation fidelity data"
+
+cd $rundir/03-summary
+plot_data.py .
