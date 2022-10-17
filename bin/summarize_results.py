@@ -1,11 +1,11 @@
 #!/usr/bin/env python3
 
 import argparse
-import pysam
 import re
+import itertools
+import pysam
 import pandas as pd
 import numpy as np
-import itertools
 
 parser = argparse.ArgumentParser()
 parser.add_argument('bam1')
@@ -14,15 +14,16 @@ parser.add_argument('-l','--left-bc', default='TTG([ACGT]{6})CGT')
 parser.add_argument('-o','--overhang', default='TCC([ACGT]{4})GGA')
 parser.add_argument('-r','--right-bc', default='ACG([ACGT]{6})CAA')
 parser.add_argument('-n','--num-passes', type=int, default=3)
-parser.add_argument('--output-fragments', default='fragments.csv')
-parser.add_argument('--output-overhangs', default='overhangs.csv')
-parser.add_argument('--output-barcodes', default='barcodes.csv')
-parser.add_argument('--output-barcodes-counts', default='barcodes-counts.csv')
-parser.add_argument('--output-barcodes-percentages', default='barcodes-percentages.csv')
-parser.add_argument('--output-matrix', default='matrix.csv')
-parser.add_argument('--output-fidelity', default='fidelity.csv')
-parser.add_argument('--output-mismatch-e', default='mismatch-e.csv')
-parser.add_argument('--output-mismatch-m', default='mismatch-m.csv')
+
+parser.add_argument('--output-fragments', default='01_fragments.csv')
+parser.add_argument('--output-overhangs', default='02_overhangs.csv')
+parser.add_argument('--output-barcodes', default='03_barcodes.csv')
+parser.add_argument('--output-barcodes-counts', default='04_barcodes-counts.csv')
+parser.add_argument('--output-barcodes-percentages', default='05_barcodes-percentages.csv')
+parser.add_argument('--output-matrix', default='06_matrix.csv')
+parser.add_argument('--output-fidelity', default='07_fidelity.csv')
+parser.add_argument('--output-mismatch-e', default='08_mismatch-e.csv')
+parser.add_argument('--output-mismatch-m', default='09_mismatch-m.csv')
 
 args = parser.parse_args()
 
@@ -199,7 +200,7 @@ def create_barcode_table(df):
 
     ### calculate percentages
     df2 = df.copy()
-    df2[cols] = df2[cols] / df2[cols].sum()
+    df2[cols+['NN']] = df2[cols+['NN']] / df2[cols+['NN']].sum()
 
     return(df,df2)
 
@@ -225,7 +226,10 @@ def create_fidelity_table(matrix):
         mm_list_sorted = sorted(mm_list.keys(), key=lambda x: mm_list[x], reverse=True)
         mm_list_len = len(mm_list_sorted)
 
-        mm_list_formatted = '; '.join(['%s (%.0f%%)' % (o, mm_list[o]/mismatch*100) for o in mm_list_sorted[:5]])
+        mm_list_formatted = None
+
+        if mm_list_len > 0:
+            mm_list_formatted = '; '.join(['%s (%.0f%%)' % (o, mm_list[o]/mismatch*100) for o in mm_list_sorted[:5]])
 
         data.append([o1,total,correct,mismatch,correct/total,mm_list_len,mm_list_formatted])
 
@@ -314,7 +318,7 @@ df['mm1'] = df.apply(lambda row: count_mismatch(row['left_bc1'],revcomp(row['rig
 df['mm2'] = df.apply(lambda row: count_mismatch(row['right_bc1'],revcomp(row['left_bc2'])), axis=1)
 
 ### discard any reads with mismatch in barcodes
-df = df[(df['mm1'] == 0) & (df['mm2'] == 0) & (df['np1'] >= args.num_passes) & (df['np2'] >= args.num_passes)]
+df = df[(df['mm1'] == 0) & (df['mm2'] == 0)]
 df = df.drop(columns=['mm1','mm2'])
 
 ### filter based on numer of passes

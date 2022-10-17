@@ -6,6 +6,13 @@ This is an official repository for computational workflow on profiling ligase fi
 
 The computational workflow requires a number of tools to be installed and available from the command line in your system.
 
+## Custom Python scripts
+
+These custom scripts are provided as part of Ligase Fidelity GitHub repository. The scripts must be made available from the command line in your system (for example, by adding the scripts directory to ```$PATH``` environment variable).
+
+* ```split.py``` - Split top/bottom subreads to separate files.
+* ```summarize_results.py``` - Extract overhang pairs and generate output tables summarizing results.
+
 ## PacBio tools
 
 * ```ccs``` - Generating circular consensus sequences (CCS) based on PacBio sequencing data. Available as part of [pbbioconda](https://github.com/PacificBiosciences/pbccs).
@@ -15,14 +22,9 @@ The computational workflow requires a number of tools to be installed and availa
 
 * ```samtools``` - Handling high-throughput sequencing data. Available through [conda](https://anaconda.org/bioconda/samtools) or [GitHub](https://github.com/samtools/samtools).
 * ```pysam``` - Python module for handling sequencing files. Available through [conda](https://anaconda.org/bioconda/pysam) or [GitHub](https://github.com/pysam-developers/pysam).
-
-## Custom PERL/Python scripts
-
-These custom scripts are provided as part of Ligase Fidelity GitHub repository. The scripts must be made available from the command line in your system (for example, by adding the scripts directory to ```$PATH``` environment variable).
-
-* ```cluster.pl``` - Identify top/bottom subreads in PacBio sequencing reads.
-* ```split.pl``` - Split top/bottom subreads to separate files.
-* ```suumarize_results.py``` - Extract overhang pairs and generate output tables summarizing results.
+* ```pandas``` - Python data analysis library. Available through [conda](https://anaconda.org/anaconda/pandas).
+* ```numpy``` - Package for scientific computing with Python. Available through [conda](https://anaconda.org/anaconda/numpy).
+* ```seaborn``` - Python data visualization library. Available through [conda](https://anaconda.org/anaconda/seaborn).
 
 # Computational workflow
 
@@ -47,21 +49,14 @@ Input PacBio BAM subreads file:
 subreads=$PWD/movie.subreads.bam
 ```
 
-Reference FASTA file:
-```
-reference=$LIGASE_FIDELITY_DIR/references/b4.fasta
-```
-
 Output directory:
 ```
 rundir=$PWD/ligase_fidelity_output
 ```
 
-This repository comes with the reference FASTA files for the 4-base overhang substrate (```b4.fasta```).
+## Split top/bottom strands
 
-## Cluster and split top/bottom strands
-
-In this step, ```cluster.pl``` script detects a continuous stretch of insert sequences separated by adapter sequences (based on expected lengths of insert and adapter sequences) in PacBio long polymerase reads. Then ```split.pl``` script splits detected insert sequences to two separate groups.
+In this step, ```split.py``` script splits subreads to two groups corresponding to the opposite strands of the double stranded ligation product. This is achived by examining the lengths of consecutive subreads/adapters in the PacBio polymerase reads. The default SMRTbell adapter length is 45 nt, and the subread length for the b4 substrate is 98 nt. The script looks for the longest sequence ...-[subread]-[adapter]-[subread]-[adapter]-... such that both subread and adapter lengths are within expected ranges. By default, 25% variation in expected subread and adapter lengths is allowed. This can be controlled through ```--smin```, ```--smax```, ```--amin```, ```--amax``` command line options. The subread names are saved to two seprate files. Then, ```samtools``` tool is used to extract actual subread sequences and store them in two separate BAM files.
 
 ```
 ### create output directory for clustered reads
@@ -69,22 +64,17 @@ jobdir=$rundir/01-cluster
 mkdir -p $jobdir
 cd $jobdir
 
-echo "cluster.pl"
-time cluster.pl --insert_length 98 ${subreads} | bzip2 - > clusters.csv.bz2
+split.py --subread-len 98 --adapter-len 45 --outfile0 subreads.0.txt --outfile1 subreads.1.txt ${subreads}
 
-echo "split.pl"
-time split.pl ${subreads} clusters.csv.bz2
-
-echo "samtools (1)"
-time samtools view -Sb subreads.fwd.sam > subreads.fwd.bam
-
-echo "samtools (1)"
-time samtools view -Sb subreads.rev.sam > subreads.rev.bam
+samtools view -N subreads.0.txt -o subreads.0.bam ${subreads}
+samtools view -N subreads.1.txt -o subreads.1.bam ${subreads}
 ```
+
+Note that ```samtools``` can use multiple CPU cores through the ```--threads``` option to speed up processing times.
 
 ## Build CCS sequences
 
-PacBio ```ccs``` tool builds consensus sequences for "top" and "bottom" strands for each sequenced product.
+PacBio ```ccs``` tool builds consensus sequences for opposite strands.
 
 ```
 ### create output directory for consensus reads
@@ -92,61 +82,108 @@ jobdir=$rundir/02-ccs
 mkdir -p $jobdir
 cd $jobdir
 
-echo "ccs (1)"
-time ccs \
-    --report-file=subreads_ccs.fwd.csv \
-    --log-file=subreads_ccs.fwd.log \
+ccs \
+    --min-passes=3 \
     --num-threads=8 \
-    --min-passes=1 \
-    $rundir/01-cluster/subreads.fwd.bam subreads_ccs.fwd.bam
+    $rundir/01-cluster/subreads.0.bam subreads_ccs.0.bam
 
-echo "ccs (2)"
-time ccs \
-    --report-file=subreads_ccs.rev.csv \
-    --log-file=subreads_ccs.rev.log \
+samtools index subreads_ccs.0.bam
+
+ccs \
+    --min-passes=3 \
     --num-threads=8 \
-    --min-passes=1 \
-    $rundir/01-cluster/subreads.rev.bam subreads_ccs.rev.bam
+    $rundir/01-cluster/subreads.1.bam subreads_ccs.1.bam
+
+samtools index subreads_ccs.1.bam
 ```
 
 ## Summary tables
 
-The resulting consensus sequences for both strands are processed, all unique overhang (and barcode) sequences are tabulated and processed to generate a set of output tables. See interpreation of results section below.
+The resulting consensus sequences for both strands are processed, all unique overhang and barcode sequences are tabulated to generate a set of output tables. For each consensus sequence the script locates the left barcode region, overhang, and right barcode region using standard pattern matching provided on the command line. For the b4 substrate, the left barcode region is six randomized bases flanked by TTG and CGT bases (```TTGNNNNNNCGT```). The corresponding pattern is ```TTG([ACGT]{6})CGT```. The overhang region is four randomized bases flanked by TCC and GGA (```TCCNNNNGGA```) and the corresponding pattern is ```TCC([ACGT]{4})GGA```. The right barcode region is six randomized bases flanked by ACG and CAA (```ACGNNNNNNCAA```) and the corresponding pattern is ```ACG([ACGT]{6})CAA```.
+
+The full sequence of the b4 substrate is:
+<u>TTG</u>NNNNNN<u>CGT</u>TGATCAATGGACGGCGCACTGGATCGCAGGTC<u>TCCNNNNGGA</u>GACCTGCGATCCAGTGCGCCGTCCATTGATCA<u>ACGNNNNNNCAA</u>.
+
+When the consensus sequence of both strands are generated, the script applies a few filters:
+* overhang and barcode regions must strictly follow the expected patterns
+* flanking bases in the opposite strands must match exactly
+* at least 3 passes are required for each strand
+
+```
+TTGNNNNNNCGTTGATCAATGGACGGCGCACTGGATCGCAGGTCTCCNNNNGGAGACCTGCGATCCAGTGCGCCGTCCATTGATCAACGNNNNNNCAA (strand 0)
+|||      |||                                |||    |||                                |||      |||
+AACNNNNNNGCAACTAGTTACCTGCCGCGTGACCTAGCGTCCAGAGGNNNNCCTCTGGACGCTAGGTCACGCGGCAGGTAACTAGTTGCNNNNNNGTT (strand 1)
+------------                                ----------                                ------------
+  left bc                                    overhang                                   right bc
+```
 
 ```
 ### create output directory for summary tables
-jobdir=$rundir/02-summary
+jobdir=$rundir/03-summary
 mkdir -p $jobdir
 cd $jobdir
 
-echo "summarize_results.py"
-time summarize_results.py $rundir/02-ccs/subreads_ccs.{fwd,rev}.bam
+summarize_results.py \
+    --left-bc 'TTG([ACGT]{6})CGT' \
+    --overhang 'TCC([ACGT]{4})GGA' \
+    --right-bc 'ACG([ACGT]{6})CAA' \
+    --num-passes 3 \
+    $rundir/02-ccs/subreads_ccs.{0,1}.bam
 ```
 
-# Insert structure of the b4 substrate
+## Interpretation of results
 
-The double stranded insert for the b4 substrate is schematically presented below. The Ligase Fidelity scripts are aimed at extracting the overhang and barcode sequences for each sequenced product. This is achieved by aligning consensus sequences of both top and bottom strands to the expected reference sequence and extracting sequence fragments corresponding to overhangs and barcodes. Additionally, the scripts extract the constant regions immediately adjacent to the overhang and barcode regions to ensure correcteness of the mapped consensus sequences.
+The last step of the workflow generates nine output files. All overhang and barcode sequences are always written in 5'-3' direction.
 
+### 01_fragments.csv
+This is the raw output of the ligation fidelity data. Each line in this file gives PacBio read name (```qname```); number of passes for the first strand (```np1```); sequence of the left barcode region (```left_bc1```), overhang (```overhang1```), and the right barcode region (```right_bc1```) in the first strand; number of passes for the second strand (```np2```), sequence of the left barcode region (```left_bc2```), overhang (```overhang2```), and the right barcode region (```right_bc2```) in the second strand; and the number of mismatching bases for each overhang pair (```overhang_mismatch```).
+
+The other output tables are built based on this raw ligation fidelity data.
+
+### 02_overhangs.csv
+
+This files tabulates the frequency of each detected overhang pair. The identity of the overhangs is provided in columns ```O1``` and ```O2```, the number of times this pair of overhangs was observed is provided in column ```Count```. For example, a line in this file like ```ACCG,CGGT,3909``` indciates this Watson-Crick pair was detected 3909 times in the sequencing run. Note, that overhang pair ```ACCG,CGGT``` can be considered in two equivalent ways:
 ```
-         1         2         3         4         5         6         7         8         9
-12345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678
-TTGNNNNNNCGTTGATCAATGGACGGCGCACTGGATCGCAGGTCTCCNNNNGGAGACCTGCGATCCAGTGCGCCGTCCATTGATCAACGNNNNNNCAA
----      ---                                ---    ---                                ---      ---
-
-1..3    left constant region (1)
-4..9    left internal barcode region
-10..12  left constant region (2)
-
-45..47  left constant region before overhang
-48..51  overhang
-52..54  right constant region after overhang
-
-87..89  right constant region (1)
-90..95  right internal barcode region
-96..98  right constant region (2)
+5' ACCG 3'
+3' TGGC 5'
 ```
 
-# Interpretation of results
+or
+
+```
+5' CGGT 3'
+3' GCCA 5'
+```
+
+For the purpose of output, the overhangs in the pair are alphabetically sorted.
+
+### 03_barcodes.csv
+
+This files provides all unique barcode sequences and their frequency. This information is used to analyze nucleotide bias/composition of the substrates.
+
+### 04_barcodes-counts.csv
+
+This file provides frequency of four bases (A, C, G, T) in every barcode position (N1, N3, N3, N4, N5, N6). The column NN provides combined frequency of four bases (irrespective of barcode position).
+
+### 05_barcodes-percentages.csv
+
+Same as above, but the frequency of four bases is provided as percentages.
+
+### 06_matrix.csv
+
+This is a matrix represenatation of all ligation events presented in the ```02_overhangs.csv``` file. The top row and leftmost column provide identities of the overhang pairs, while the numbers in the matrix presents the ligation frequencies (the number of ligation events). The overhangs in the top row and leftmost column are ordered such that the diagonal corresponds to Watson-Crick (fully complementary) pairs. As mentioned above, each overhang pair can be represented in two equivalent ways. Therefore, in the matrix form each overhang pair is present twice, hence the total number of ligation events is doubled.
+
+### 07_fidelity.csv
+
+This tables summarrizes the number of total, correct, and mismatch ligation events for each overhang. The ratio of correct events to the total number of ligation events defines fidelity for a given overhang. Additionally, the table provides the total number of mismatch overhangs, and the five most frequent mismatch overhangs.
+
+### 08_mismatch-e.csv
+
+This table summarizes the frequency of mismatch bases in the "edge" position on the overhang pairs. Please check Figure 3A in the original publication below for details.
+
+### 09_mismatch-m.csv
+
+This table summarizes the frequency of mismatch bases in the "middle" position on the overhang pairs. Please check Figure 3B in the original publication below for details.
 
 # Citing
 
