@@ -23,7 +23,7 @@ ln -s /mnt/pacbio/smrtlink/data/runs/64163/r64163_20220707_183853/4_D01/m64163_2
 subreads=$PWD/movie.subreads.bam
 
 # output directory
-rundir=$PWD/example/ligase_fidelity_output_20221017_1456
+rundir=$PWD/example
 
 echo ""
 echo "subreads   : $subreads"
@@ -44,6 +44,7 @@ cd $jobdir
 echo "split"
 time split.py \
     --subread-len 98 \
+    --adapter-len 45 \
     --outfile0 subreads.0.txt \
     --outfile1 subreads.1.txt \
     ${subreads}
@@ -95,7 +96,12 @@ mkdir -p $jobdir
 cd $jobdir
 
 echo "summarize_results.py"
-time summarize_results.py $rundir/02-ccs/subreads_ccs.{0,1}.bam
+time summarize_results.py \
+    --left-bc 'TTG([ACGT]{6})CGT' \
+    --overhang 'TCC([ACGT]{4})GGA' \
+    --right-bc 'ACG([ACGT]{6})CAA' \
+    --num-passes 3 \
+    $rundir/02-ccs/subreads_ccs.{0,1}.bam
 
 ###############################################################################
 ### Plot data (optional)                                                    ###
@@ -104,5 +110,6 @@ time summarize_results.py $rundir/02-ccs/subreads_ccs.{0,1}.bam
 echo ""
 echo "Plot ligation fidelity data"
 
-cd $rundir/03-summary
-plot_data.py .
+mkdir -p $rundir/03-summary/figures
+cd $rundir/03-summary/figures
+plot_data.py $rundir/03-summary

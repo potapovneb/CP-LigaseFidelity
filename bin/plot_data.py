@@ -1,5 +1,23 @@
 #!/usr/bin/env python3
 
+###############################################################################
+# Ligase Fidelity Profiling
+# Copyright (C) 2022 New England Biolabs, Inc.
+# 
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU Affero General Public License as published
+# by the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+# 
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU Affero General Public License for more details.
+# 
+# You should have received a copy of the GNU Affero General Public License
+# along with this program.  If not, see <https://www.gnu.org/licenses/>.
+###############################################################################
+
 import argparse
 import numpy as np
 import pandas as pd
@@ -10,7 +28,9 @@ parser = argparse.ArgumentParser()
 parser.add_argument('ligation_data_dir')
 args = parser.parse_args()
 
+
 def plot_matrix(input_file):
+    # Load data
     data = pd.read_csv(input_file, sep=',', index_col=0)
 
     # normalize ligation events per 100,0000
@@ -35,7 +55,7 @@ def plot_matrix(input_file):
                         square=True,
                         linecolor='white',
                         linewidths=0.1,
-                        cbar=True,
+                        cbar=False,
                         cbar_kws={"shrink": .5},
                         annot=False,
                         xticklabels=True,
@@ -45,14 +65,16 @@ def plot_matrix(input_file):
     plt.xlabel('')
     plt.ylabel('')
 
-    output_file = input_file.split('.')[0] + '.png'
+    # Save the figure
+    output_file = input_file.replace('.csv','.png')
     plt.savefig(output_file)
 
-def plot_ligation_fidelity(input_file):
+
+def plot_fidelity(input_file):
     # Load data
     fidelity = pd.read_csv(input_file, sep=',')
 
-    # Normalize data
+    # Normalize data to 100,000
     total = fidelity['Total'].sum()
     fidelity['Total'] = fidelity['Total'] / total * 1e5
     fidelity['Mismatch'] = fidelity['Mismatch'] / total * 1e5
@@ -79,8 +101,10 @@ def plot_ligation_fidelity(input_file):
     ax.set(xlim=(0, 800), ylabel="", xlabel="Ligation events")
     sns.despine(left=True, bottom=True)
     
-    output_file = input_file.split('.')[0] + '.png'
+    # Save the figure
+    output_file = input_file.replace('.csv','.png')
     plt.savefig(output_file)
+
 
 def plot_mismatch(input_file):
     # Load data
@@ -88,9 +112,11 @@ def plot_mismatch(input_file):
     mismatch['Mismatch'] = mismatch.apply(lambda row: row['Bottom'] + row['Top'],axis=1)
     mismatch = mismatch.sort_values(by='Count',ascending=False)
 
+    # Calculate percentages
     total = mismatch['Count'].sum()
     mismatch['Count'] = mismatch['Count'] / total * 100
 
+    # Discard Watson-Crick pairs from the plot
     mismatch = mismatch[(mismatch['Mismatch'] != 'AT') & (mismatch['Mismatch'] != 'TA') & (mismatch['Mismatch'] != 'CG') & (mismatch['Mismatch'] != 'GC')]
     mismatch = mismatch[['Mismatch','Count']]
 
@@ -106,13 +132,14 @@ def plot_mismatch(input_file):
 
     # Plot the total number of ligation events
     sns.barplot(x='Mismatch', y='Count', data=mismatch, color=col[1])
-    ax.set(ylim=(0,5), ylabel='Mismatch frequency')
+    ax.set(ylim=(0,5), ylabel='Mismatch frequency, %')
     sns.despine(left=True, bottom=True)
-    
-    output_file = input_file.split('.')[0] + '.png'
+
+    # Save the figure
+    output_file = input_file.replace('.csv','.png')
     plt.savefig(output_file)
 
-plot_matrix(args.ligation_data_dir + '/06_matrix.csv')
-plot_ligation_fidelity(args.ligation_data_dir + '/07_fidelity.csv')
-plot_mismatch(args.ligation_data_dir + '/08_mismatch-e.csv')
-plot_mismatch(args.ligation_data_dir + '/09_mismatch-m.csv')
+plot_matrix(args.ligation_data_dir   + '/' + '06_matrix.csv')
+plot_fidelity(args.ligation_data_dir + '/' + '07_fidelity.csv')
+plot_mismatch(args.ligation_data_dir + '/' + '08_mismatch-e.csv')
+plot_mismatch(args.ligation_data_dir + '/' + '09_mismatch-m.csv')

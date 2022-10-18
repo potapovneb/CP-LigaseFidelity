@@ -10,8 +10,9 @@ The computational workflow requires a number of tools to be installed and availa
 
 These custom scripts are provided as part of Ligase Fidelity GitHub repository. The scripts must be made available from the command line in your system (for example, by adding the scripts directory to ```$PATH``` environment variable).
 
-* ```split.py``` - Split top/bottom subreads to separate files.
+* ```split.py``` - Split top and bottom subreads to separate files.
 * ```summarize_results.py``` - Extract overhang pairs and generate output tables summarizing results.
+* ```plot_data.py``` - Generate example ligase fidelity plots.
 
 ## PacBio tools
 
@@ -52,12 +53,12 @@ subreads=$PWD/movie.subreads.bam
 
 Output directory:
 ```
-rundir=$PWD/ligase_fidelity_output
+rundir=$PWD/example
 ```
 
 ## Split top/bottom strands
 
-In this step, ```split.py``` script splits subreads to two groups corresponding to the opposite strands of the double stranded ligation product. This is achived by examining the lengths of consecutive subreads/adapters in the PacBio polymerase reads. The default SMRTbell adapter length is 45 nt, and the subread length for the b4 substrate is 98 nt. The script looks for the longest sequence ...-[subread]-[adapter]-[subread]-[adapter]-... such that both subread and adapter lengths are within expected ranges. By default, 25% variation in expected subread and adapter lengths is allowed. This can be controlled through ```--smin```, ```--smax```, ```--amin```, ```--amax``` command line options. The subread names are saved to two seprate files. Then, ```samtools``` tool is used to extract actual subread sequences and store them in two separate BAM files.
+In this step, ```split.py``` script splits subreads to two groups corresponding to the opposite strands of the double stranded ligation product. This is achived by examining the lengths of consecutive subreads/adapters in the PacBio polymerase reads. The default SMRTbell adapter length is 45 nt, and the subread length for the b4 substrate is 98 nt. The script looks for the longest sequence ...-[subread]-[adapter]-[subread]-[adapter]-... such that both subread and adapter lengths are within expected ranges. By default, 25% variation in expected subread and adapter lengths is allowed. This can be controlled through ```--smin```, ```--smax```, ```--amin```, ```--amax``` command line options. The subread names are saved to two separate files. Then, ```samtools``` tool is used to extract actual subread sequences and store them in two separate BAM files.
 
 ```
 ### create output directory for clustered reads
@@ -65,13 +66,20 @@ jobdir=$rundir/01-cluster
 mkdir -p $jobdir
 cd $jobdir
 
-split.py --subread-len 98 --adapter-len 45 --outfile0 subreads.0.txt --outfile1 subreads.1.txt ${subreads}
+echo "split"
+split.py \
+    --subread-len 98 \
+    --adapter-len 45 \
+    --outfile0 subreads.0.txt \
+    --outfile1 subreads.1.txt \
+    ${subreads}
 
 samtools view -N subreads.0.txt -o subreads.0.bam ${subreads}
+
 samtools view -N subreads.1.txt -o subreads.1.bam ${subreads}
 ```
 
-Note that ```samtools``` can use multiple CPU cores through the ```--threads``` option to speed up processing times.
+Note that ```samtools``` can use multiple CPU cores with the ```--threads``` option to speed up processing times.
 
 ## Build CCS sequences
 
@@ -84,18 +92,18 @@ mkdir -p $jobdir
 cd $jobdir
 
 ccs \
+    --num-threads=24 \
     --min-passes=3 \
-    --num-threads=8 \
     $rundir/01-cluster/subreads.0.bam subreads_ccs.0.bam
 
-samtools index subreads_ccs.0.bam
+samtools index $rundir/02-ccs/subreads_ccs.0.bam
 
 ccs \
+    --num-threads=24 \
     --min-passes=3 \
-    --num-threads=8 \
     $rundir/01-cluster/subreads.1.bam subreads_ccs.1.bam
 
-samtools index subreads_ccs.1.bam
+samtools index $rundir/02-ccs/subreads_ccs.1.bam
 ```
 
 ## Summary tables
@@ -105,7 +113,7 @@ The resulting consensus sequences for both strands are processed, all unique ove
 The full sequence of the b4 substrate is:
 <u>TTG</u>NNNNNN<u>CGT</u>TGATCAATGGACGGCGCACTGGATCGCAGGTC<u>TCCNNNNGGA</u>GACCTGCGATCCAGTGCGCCGTCCATTGATCA<u>ACGNNNNNNCAA</u>.
 
-When the consensus sequence of both strands are generated, the script applies a few filters:
+When the consensus sequences of both strands are generated, the script applies a number of filters:
 * overhang and barcode regions must strictly follow the expected patterns
 * flanking bases in the opposite strands must match exactly
 * at least 3 passes are required for each strand
@@ -154,13 +162,19 @@ plot_data.py .
 Note that all overhang and barcode sequences are always written in 5'-3' direction.
 
 ### 01_fragments.csv
-This is the raw output of the ligation fidelity data. Each line in this file gives PacBio read name (```qname```); number of passes for the first strand (```np1```); sequence of the left barcode region (```left_bc1```), overhang (```overhang1```), and the right barcode region (```right_bc1```) in the first strand; number of passes for the second strand (```np2```), sequence of the left barcode region (```left_bc2```), overhang (```overhang2```), and the right barcode region (```right_bc2```) in the second strand; and the number of mismatching bases for each overhang pair (```overhang_mismatch```).
+This is the raw output of the ligation fidelity data. Each line in this file gives:
+* PacBio read name (```qname```)
+* number of passes for the first strand (```np1```)
+* sequence of the left barcode region (```left_bc1```), overhang (```overhang1```), and the right barcode region (```right_bc1```) in the first strand
+* number of passes for the second strand (```np2```)
+* sequence of the left barcode region (```left_bc2```), overhang (```overhang2```), and the right barcode region (```right_bc2```) in the second strand
+* the number of mismatching bases for each overhang pair (```overhang_mismatch```).
 
 The other output tables are built based on this raw ligation fidelity data.
 
 ### 02_overhangs.csv
 
-This files tabulates the frequency of each detected overhang pair. The identity of the overhangs is provided in columns ```O1``` and ```O2```, the number of times this pair of overhangs was observed is provided in column ```Count```. For example, a line in this file like ```ACCG,CGGT,3909``` indciates this Watson-Crick pair was detected 3909 times in the sequencing run. Note, that overhang pair ```ACCG,CGGT``` can be considered in two equivalent ways:
+This file tabulates the frequency of each detected overhang pair. The identity of the overhangs is provided in columns ```O1``` and ```O2```, the number of times the overhang pair was observed is provided in column ```Count```. For example, a line in this file like ```ACCG,CGGT,3909``` indciates this Watson-Crick pair was detected 3909 times in the sequencing run. Note, that overhang pair ```ACCG,CGGT``` can be viewed in two equivalent ways:
 ```
 5' ACCG 3'
 3' TGGC 5'
