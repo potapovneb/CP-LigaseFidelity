@@ -103,13 +103,4 @@ time summarize_results.py \
     --num-passes 3 \
     $rundir/02-ccs/subreads_ccs.{0,1}.bam
 
-###############################################################################
-### Plot data (optional)                                                    ###
-###############################################################################
-
-echo ""
-echo "Plot ligation fidelity data"
-
-mkdir -p $rundir/03-summary/figures
-cd $rundir/03-summary/figures
 plot_data.py $rundir/03-summary

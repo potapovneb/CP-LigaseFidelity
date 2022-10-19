@@ -207,7 +207,7 @@ This is a matrix represenatation of all ligation events presented in the ```02_o
 
 ### 07_fidelity.csv
 
-This tables summarrizes the number of total, correct, and mismatch ligation events for each overhang. The ratio of correct events to the total number of ligation events defines fidelity for a given overhang. Additionally, the table provides the total number of mismatch overhangs, and the five most frequent mismatch overhangs.
+This table summarizes the number of total, correct, and mismatch ligation events for each overhang. The ratio of correct events to the total number of ligation events defines fidelity for a given overhang. Additionally, the table provides the total number of mismatch overhangs, and the five most frequent mismatch overhangs.
 
 ### 08_mismatch-e.csv
 
