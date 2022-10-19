@@ -238,7 +238,7 @@ This table summarizes the frequency of mismatch bases in the "middle" position o
 <details>
 <summary>Frequency of specific base pair mismatches by position (the edge position)</summary>
 
-![Frequency of specific base pair mismatches by position (the middle position)](example/03-summary/09_mismatch-m.png)
+![Frequency of specific base pair mismatches by position (the middle position)](CP-LigaseFidelity/example/03-summary/09_mismatch-m.png)
 </details>
 
 # Citing
