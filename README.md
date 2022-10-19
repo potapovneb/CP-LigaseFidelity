@@ -205,37 +205,17 @@ Same as above, but the frequency of four bases is provided as percentages.
 
 This is a matrix represenatation of all ligation events presented in the ```02_overhangs.csv``` file. The top row and leftmost column provide identities of the overhang pairs, while the numbers in the matrix presents the ligation frequencies (the number of ligation events). The overhangs in the top row and leftmost column are ordered such that the diagonal corresponds to Watson-Crick (fully complementary) pairs. As mentioned above, each overhang pair can be represented in two equivalent ways. Therefore, in the matrix form each overhang pair is present twice, hence the total number of ligation events is doubled.
 
-<details>
-<summary>Frequency heat map of all ligation events (log-scaled)</summary>
-<img src="example/03-summary/06_matrix.png" width="600"/>
-</details>
-
 ### [07_fidelity.csv](example/03-summary/07_fidelity.csv)
 
 This table summarizes the number of total, correct, and mismatch ligation events for each overhang. The ratio of correct events to the total number of ligation events defines fidelity for a given overhang. Additionally, the table provides the total number of mismatch overhangs, and the five most frequent mismatch overhangs.
-
-<details>
-<summary>Stacked bar plot showing the frequency of ligation products containing each overhang</summary>
-<img src="example/03-summary/07_fidelity.png" width="300"/>
-</details>
 
 ### [08_mismatch-e.csv](example/03-summary/08_mismatch-e.csv)
 
 This table summarizes the frequency of mismatch bases in the "edge" position on the overhang pairs. Please check Figure 3A in the original publication below for details.
 
-<details>
-<summary>Frequency of specific base pair mismatches by position (the edge position)</summary>
-<img src="example/03-summary/08_mismatch-e.png" width="300"/>
-</details>
-
 ### [09_mismatch-m.csv](example/03-summary/09_mismatch-m.csv)
 
 This table summarizes the frequency of mismatch bases in the "middle" position on the overhang pairs. Please check Figure 3B in the original publication below for details.
-
-<details>
-<summary>Frequency of specific base pair mismatches by position (the edge position)</summary>
-<img src="example/03-summary/09_mismatch-m.png" width="300"/>
-</details>
 
 # Citing
 
