@@ -207,8 +207,7 @@ This is a matrix represenatation of all ligation events presented in the ```02_o
 
 <details>
 <summary>Frequency heat map of all ligation events (log-scaled)</summary>
-
-![Frequency heat map of all ligation events (log-scaled)](example/03-summary/06_matrix.png)
+<img src="example/03-summary/06_matrix.png" width="600"/>
 </details>
 
 ### [07_fidelity.csv](example/03-summary/07_fidelity.csv)
@@ -217,8 +216,7 @@ This table summarizes the number of total, correct, and mismatch ligation events
 
 <details>
 <summary>Stacked bar plot showing the frequency of ligation products containing each overhang</summary>
-
-![Stacked bar plot showing the frequency of ligation products containing each overhang](example/03-summary/07_fidelity.png)
+<img src="example/03-summary/07_fidelity.png" width="300"/>
 </details>
 
 ### [08_mismatch-e.csv](example/03-summary/08_mismatch-e.csv)
@@ -227,8 +225,7 @@ This table summarizes the frequency of mismatch bases in the "edge" position on 
 
 <details>
 <summary>Frequency of specific base pair mismatches by position (the edge position)</summary>
-
-![Frequency of specific base pair mismatches by position (the edge position)](example/03-summary/08_mismatch-e.png)
+<img src="example/03-summary/08_mismatch-e.png" width="300"/>
 </details>
 
 ### [09_mismatch-m.csv](example/03-summary/09_mismatch-m.csv)
@@ -237,8 +234,7 @@ This table summarizes the frequency of mismatch bases in the "middle" position o
 
 <details>
 <summary>Frequency of specific base pair mismatches by position (the edge position)</summary>
-
-![Frequency of specific base pair mismatches by position (the middle position)](CP-LigaseFidelity/example/03-summary/09_mismatch-m.png)
+<img src="example/03-summary/09_mismatch-m.png" width="300"/>
 </details>
 
 # Citing
