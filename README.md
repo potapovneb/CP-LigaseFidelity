@@ -161,7 +161,7 @@ plot_data.py .
 
 Note that all overhang and barcode sequences are always written in 5'-3' direction.
 
-### 01_fragments.csv
+### [01_fragments.csv](example/03-summary/01_fragments.csv)
 This is the raw output of the ligation fidelity data. Each line in this file gives:
 * PacBio read name (```qname```)
 * number of passes for the first strand (```np1```)
@@ -172,7 +172,7 @@ This is the raw output of the ligation fidelity data. Each line in this file giv
 
 The other output tables are built based on this raw ligation fidelity data.
 
-### 02_overhangs.csv
+### [02_overhangs.csv](example/03-summary/02_overhangs.csv)
 
 This file tabulates the frequency of each detected overhang pair. The identity of the overhangs is provided in columns ```O1``` and ```O2```, the number of times the overhang pair was observed is provided in column ```Count```. For example, a line in this file like ```ACCG,CGGT,3909``` indciates this Watson-Crick pair was detected 3909 times in the sequencing run. Note, that overhang pair ```ACCG,CGGT``` can be viewed in two equivalent ways:
 ```
@@ -189,33 +189,57 @@ or
 
 For the purpose of output, the overhangs in the pair are alphabetically sorted.
 
-### 03_barcodes.csv
+### [03_barcodes.csv](example/03-summary/03_barcodes.csv)
 
 This files provides all unique barcode sequences and their frequency. This information is used to analyze nucleotide bias/composition of the substrates.
 
-### 04_barcodes-counts.csv
+### [04_barcodes-c.csv](example/03-summary/04_barcodes-c.csv)
 
 This file provides frequency of four bases (A, C, G, T) in every barcode position (N1, N3, N3, N4, N5, N6). The column NN provides combined frequency of four bases (irrespective of barcode position).
 
-### 05_barcodes-percentages.csv
+### [05_barcodes-p.csv](example/03-summary/04_barcodes-p.csv)
 
 Same as above, but the frequency of four bases is provided as percentages.
 
-### 06_matrix.csv
+### [06_matrix.csv](example/03-summary/06_matrix.csv)
 
 This is a matrix represenatation of all ligation events presented in the ```02_overhangs.csv``` file. The top row and leftmost column provide identities of the overhang pairs, while the numbers in the matrix presents the ligation frequencies (the number of ligation events). The overhangs in the top row and leftmost column are ordered such that the diagonal corresponds to Watson-Crick (fully complementary) pairs. As mentioned above, each overhang pair can be represented in two equivalent ways. Therefore, in the matrix form each overhang pair is present twice, hence the total number of ligation events is doubled.
 
-### 07_fidelity.csv
+<details>
+<summary>Frequency heat map of all ligation events (log-scaled)</summary>
+
+![Frequency heat map of all ligation events (log-scaled)](example/03-summary/06_matrix.png)
+</details>
+
+### [07_fidelity.csv](example/03-summary/07_fidelity.csv)
 
 This table summarizes the number of total, correct, and mismatch ligation events for each overhang. The ratio of correct events to the total number of ligation events defines fidelity for a given overhang. Additionally, the table provides the total number of mismatch overhangs, and the five most frequent mismatch overhangs.
 
-### 08_mismatch-e.csv
+<details>
+<summary>Stacked bar plot showing the frequency of ligation products containing each overhang</summary>
+
+![Stacked bar plot showing the frequency of ligation products containing each overhang](example/03-summary/07_fidelity.png)
+</details>
+
+### [08_mismatch-e.csv](example/03-summary/08_mismatch-e.csv)
 
 This table summarizes the frequency of mismatch bases in the "edge" position on the overhang pairs. Please check Figure 3A in the original publication below for details.
 
-### 09_mismatch-m.csv
+<details>
+<summary>Frequency of specific base pair mismatches by position (the edge position)</summary>
+
+![Frequency of specific base pair mismatches by position (the edge position)](example/03-summary/08_mismatch-e.png)
+</details>
+
+### [09_mismatch-m.csv](example/03-summary/09_mismatch-m.csv)
 
 This table summarizes the frequency of mismatch bases in the "middle" position on the overhang pairs. Please check Figure 3B in the original publication below for details.
+
+<details>
+<summary>Frequency of specific base pair mismatches by position (the edge position)</summary>
+
+![Frequency of specific base pair mismatches by position (the middle position)](example/03-summary/09_mismatch-m.png)
+</details>
 
 # Citing
 
