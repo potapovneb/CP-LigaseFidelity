@@ -38,11 +38,7 @@ The computational steps are described below.
 
 ## Example PacBio BAM sequencing data
 
-For the purpose of this example, you can download PacBio sequencing data for the b4 substrate sequencing.
-
-```
-wget https://sra-download.ncbi.nlm.nih.gov/traces/sra70/SRZ/019043/SRR19043774/lib26.bam
-```
+Download PacBio sequencing data (m64163_220709_012719.subreads.bam) for the b4 substrate from NCBI SRA (PRJNA894239) to the working directory and rename to movie.subreads.bam.
 
 For convenience, we define a set of environment variables to define location of the input data files and the output directory. Please update these variables according to your computational environment.
 
@@ -75,7 +71,6 @@ split.py \
     ${subreads}
 
 samtools view -N subreads.0.txt -o subreads.0.bam ${subreads}
-
 samtools view -N subreads.1.txt -o subreads.1.bam ${subreads}
 ```
 
@@ -96,13 +91,12 @@ ccs \
     --min-passes=3 \
     $rundir/01-cluster/subreads.0.bam subreads_ccs.0.bam
 
-samtools index $rundir/02-ccs/subreads_ccs.0.bam
-
 ccs \
     --num-threads=24 \
     --min-passes=3 \
     $rundir/01-cluster/subreads.1.bam subreads_ccs.1.bam
 
+samtools index $rundir/02-ccs/subreads_ccs.0.bam
 samtools index $rundir/02-ccs/subreads_ccs.1.bam
 ```
 

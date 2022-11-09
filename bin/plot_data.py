@@ -98,7 +98,8 @@ def plot_fidelity(input_file):
 
     # Add a legend and informative axis label
     ax.legend(ncol=2, loc="lower right", frameon=True)
-    ax.set(xlim=(0, 800), ylabel="", xlabel="Ligation events")
+    # ax.set(xlim=(0, 800), ylabel="", xlabel="Ligation events")
+    ax.set(ylabel="", xlabel="Ligation events")
     sns.despine(left=True, bottom=True)
     
     # Save the figure
@@ -125,14 +126,15 @@ def plot_mismatch(input_file):
     sns.set_theme(style="whitegrid")
 
     # Set up the matplotlib figure
-    f, ax = plt.subplots(figsize=(5, 5))
+    f, ax = plt.subplots(figsize=(7, 7))
 
     # Define colors
     col = sns.color_palette("Set2")
 
     # Plot the total number of ligation events
     sns.barplot(x='Mismatch', y='Count', data=mismatch, color=col[1])
-    ax.set(ylim=(0,5), ylabel='Mismatch frequency, %')
+    # ax.set(ylim=(0,5), ylabel='Mismatch frequency, %')
+    ax.set(ylabel='Mismatch frequency, %')
     sns.despine(left=True, bottom=True)
 
     # Save the figure

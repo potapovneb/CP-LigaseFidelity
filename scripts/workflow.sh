@@ -1,10 +1,7 @@
 #!/bin/bash -l
 
-conda activate cp-ligfi
-
 ### path to Ligase Fidelity repo
-# LIGASE_FIDELITY_DIR="/PATH/TO/LIGFI_INSTALLATION_DIRECTORY"
-LIGASE_FIDELITY_DIR="/mnt/home/potapov/projects/160202.LigaseFidelity/manuscript/github/ligase-fidelity/CP-LIGFI"
+LIGASE_FIDELITY_DIR="/PATH/TO/LIGFI_INSTALLATION_DIRECTORY"
 
 export PATH=$LIGASE_FIDELITY_DIR/bin:$PATH
 
@@ -12,8 +9,8 @@ export PATH=$LIGASE_FIDELITY_DIR/bin:$PATH
 ### Download example PacBio BAM subreads file                               ###
 ###############################################################################
 
-# wget https://sra-download.ncbi.nlm.nih.gov/traces/sra70/SRZ/019043/SRR19043774/lib26.bam
-ln -s /mnt/pacbio/smrtlink/data/runs/64163/r64163_20220707_183853/4_D01/m64163_220709_012719.subreads.bam movie.subreads.bam
+# Download PacBio BAM file (m64163_220709_012719.subreads.bam) from NCBI SRA
+# (PRJNA894239) to the working directory and rename to movie.subreads.bam
 
 ###############################################################################
 ### Define input data files and output directory                            ###
@@ -41,19 +38,15 @@ jobdir=$rundir/01-cluster
 mkdir -p $jobdir
 cd $jobdir
 
-echo "split"
-time split.py \
+split.py \
     --subread-len 98 \
     --adapter-len 45 \
     --outfile0 subreads.0.txt \
     --outfile1 subreads.1.txt \
     ${subreads}
 
-echo "samtools (0)"
-time samtools view --threads 24 -N subreads.0.txt -o subreads.0.bam ${subreads}
-
-echo "samtools (1)"
-time samtools view --threads 24 -N subreads.1.txt -o subreads.1.bam ${subreads}
+samtools view --threads 24 -N subreads.0.txt -o subreads.0.bam ${subreads}
+samtools view --threads 24 -N subreads.1.txt -o subreads.1.bam ${subreads}
 
 ###############################################################################
 ### Build CCS sequences                                                     ###
@@ -67,20 +60,17 @@ jobdir=$rundir/02-ccs
 mkdir -p $jobdir
 cd $jobdir
 
-echo "ccs (1)"
-time ccs \
+ccs \
     --num-threads=24 \
     --min-passes=3 \
     $rundir/01-cluster/subreads.0.bam subreads_ccs.0.bam
 
-samtools index $rundir/02-ccs/subreads_ccs.0.bam
-
-echo "ccs (2)"
-time ccs \
+ccs \
     --num-threads=24 \
     --min-passes=3 \
     $rundir/01-cluster/subreads.1.bam subreads_ccs.1.bam
 
+samtools index $rundir/02-ccs/subreads_ccs.0.bam
 samtools index $rundir/02-ccs/subreads_ccs.1.bam
 
 ###############################################################################
@@ -95,8 +85,7 @@ jobdir=$rundir/03-summary
 mkdir -p $jobdir
 cd $jobdir
 
-echo "summarize_results.py"
-time summarize_results.py \
+summarize_results.py \
     --left-bc 'TTG([ACGT]{6})CGT' \
     --overhang 'TCC([ACGT]{4})GGA' \
     --right-bc 'ACG([ACGT]{6})CAA' \
